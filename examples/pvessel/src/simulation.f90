@@ -98,9 +98,9 @@ contains
       logical :: isIn
       real(WP) :: r
       isIn=.false.
-      if (abs(pg%xm(i)+dx-0.5_WP*lpipe).le.dx.and.abs(pg%y(j)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
-      if (abs(pg%xm(i)                ).le.dx.and.abs(pg%y(j)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
-      if (abs(pg%xm(i)-dx+0.5_WP*lpipe).le.dx.and.abs(pg%y(j)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
+      if (abs(pg%xm(i)+dx-0.5_WP*lpipe).le.dx.and.pg%y(j)-0.5_WP*dy.lt.ypipe+rpipe.and.pg%y(j)+0.5_WP*dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
+      if (abs(pg%xm(i)                ).le.dx.and.pg%y(j)-0.5_WP*dy.lt.ypipe+rpipe.and.pg%y(j)+0.5_WP*dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
+      if (abs(pg%xm(i)-dx+0.5_WP*lpipe).le.dx.and.pg%y(j)-0.5_WP*dy.lt.ypipe+rpipe.and.pg%y(j)+0.5_WP*dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
    end function vtube
    
    
@@ -113,9 +113,9 @@ contains
       logical :: isIn
       real(WP) :: r
       isIn=.false.
-      if (abs(pg%xm(i)+dx-0.5_WP*lpipe).le.dx.and.abs(pg%y(j+1)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
-      if (abs(pg%xm(i)                ).le.dx.and.abs(pg%y(j+1)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
-      if (abs(pg%xm(i)-dx+0.5_WP*lpipe).le.dx.and.abs(pg%y(j+1)-dy-ypipe).lt.dy.and.abs(pg%zm(k)).lt.0.02_WP) isIn=.true.
+      if (abs(pg%xm(i)+dx-0.5_WP*lpipe).le.dx.and.pg%ym(j).lt.ypipe+rpipe.and.pg%ym(j)+dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
+      if (abs(pg%xm(i)                ).le.dx.and.pg%ym(j).lt.ypipe+rpipe.and.pg%ym(j)+dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
+      if (abs(pg%xm(i)-dx+0.5_WP*lpipe).le.dx.and.pg%ym(j).lt.ypipe+rpipe.and.pg%ym(j)+dy.ge.ypipe+rpipe.and.abs(pg%zm(k)).lt.rpipe) isIn=.true.
    end function sctube
    
    
@@ -358,7 +358,7 @@ end subroutine get_cond
       
       ! Create an incompressible flow solver with bconds
       create_solver: block
-         use ils_class,     only: gmres,gmres_amg
+         use ils_class,     only: pcg_pfmg,pcg_amg
          use lowmach_class, only: dirichlet
          real(WP) :: visc
          ! Create flow solver
@@ -378,7 +378,7 @@ end subroutine get_cond
          call param_read('Implicit iteration',fs%implicit%maxit)
          call param_read('Implicit tolerance',fs%implicit%rcvg)
          ! Setup the solver
-         call fs%setup(pressure_ils=gmres_amg,implicit_ils=gmres)
+         call fs%setup(pressure_ils=pcg_amg,implicit_ils=pcg_pfmg)
       end block create_solver
       
       
@@ -490,7 +490,7 @@ end subroutine get_cond
                end do
             end do
          end do
-         call fs%psolv%update_solver()
+         call fs%psolv%setup()
          ! Also allocate the temperature arrays
          allocate(Tprod(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Tprodold(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
@@ -499,7 +499,7 @@ end subroutine get_cond
       
       ! Create a scalar solver
       create_scalar: block
-         use ils_class,      only: gmres,pfmg
+         use ils_class,      only: gmres
          use vdscalar_class, only: dirichlet,quick
          real(WP) :: diffusivity
          ! Check if we want to model wall losses
@@ -908,9 +908,9 @@ end subroutine get_cond
             end block mom_bcond
             
             ! Solve Poisson equation
-            call fs%correct_mfr()                          !< Now outlet so this gets the MFR imbalance
+            call fs%correct_mfr()                          !< No outlet so this gets the MFR imbalance
             fluid_mass=fluid_mass_old-sum(fs%mfr)*time%dt  !< Update mass in system
-            call get_rho(mass=fluid_mass)                  !< Adjust rho and pressure in accordance
+            call get_rho(mass=fluid_mass)                  !< Adjust rho and pressure accordingly
             call sc%get_drhodt(dt=time%dt,drhodt=resSC)
             call fs%get_div(drhodt=resSC)
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dtmid

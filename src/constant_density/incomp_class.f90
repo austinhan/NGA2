@@ -778,8 +778,8 @@ contains
       end do
       
       ! Initialize the pressure Poisson solver
-      call this%psolv%init_solver(pressure_ils)
-      call this%psolv%update_solver()
+      call this%psolv%init(pressure_ils)
+      call this%psolv%setup()
       
       ! Set 7-pt stencil map for the velocity solver
       this%implicit%stc(1,:)=[ 0, 0, 0]
@@ -794,7 +794,7 @@ contains
       this%implicit%opr(1,:,:,:)=1.0_WP
       
       ! Initialize the implicit velocity solver
-      call this%implicit%init_solver(implicit_ils)
+      call this%implicit%init(implicit_ils)
       
    end subroutine setup
    
@@ -1376,15 +1376,21 @@ contains
       real(WP), dimension(:), allocatable :: canCorrect
       
       ! Ensure this%mfr is of proper size
-      if (size(this%mfr).ne.this%nbc.or..not.allocated(this%mfr)) then
-         if (allocated(this%mfr)) deallocate(this%mfr)
+      if (.not.allocated(this%mfr)) then
          allocate(this%mfr(this%nbc))
+      else
+         if (size(this%mfr).ne.this%nbc) then
+            deallocate(this%mfr); allocate(this%mfr(this%nbc))
+         end if
       end if
       
       ! Ensure this%area is of proper size
-      if (size(this%area).ne.this%nbc.or..not.allocated(this%area)) then
-         if (allocated(this%area)) deallocate(this%area)
+      if (.not.allocated(this%area)) then
          allocate(this%area(this%nbc))
+      else
+         if (size(this%area).ne.this%nbc) then
+            deallocate(this%area); allocate(this%area(this%nbc))
+         end if
       end if
       
       ! Allocate temp array for communication
@@ -1595,7 +1601,7 @@ contains
             end do
          end do
       end do
-      call this%implicit%update_solver()
+      call this%implicit%setup()
       this%implicit%rhs=resU
       this%implicit%sol=0.0_WP
       call this%implicit%solve()
@@ -1645,7 +1651,7 @@ contains
             end do
          end do
       end do
-      call this%implicit%update_solver()
+      call this%implicit%setup()
       this%implicit%rhs=resV
       this%implicit%sol=0.0_WP
       call this%implicit%solve()
@@ -1695,7 +1701,7 @@ contains
             end do
          end do
       end do
-      call this%implicit%update_solver()
+      call this%implicit%setup()
       this%implicit%rhs=resW
       this%implicit%sol=0.0_WP
       call this%implicit%solve()

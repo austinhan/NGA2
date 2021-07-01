@@ -2,12 +2,12 @@
 Partition : 1 1 4
 
 # Mesh definition
-Lx : 2.5e-2
-Ly : 5.0e-2
-Lz : 2.5e-2
-nx : 50   !100
-ny : 100  !200
-nz : 50   !100
+Lx : 30e-3
+Ly : 15e-3
+Lz : 30e-3
+nx : 100
+ny : 50
+nz : 100
 
 # Wall geometry
 Hole size  : 0.001
@@ -15,21 +15,22 @@ Hole dist  : 0.002
 Hole depth : 0.02
 
 # Droplet properties
-Droplet radius :        5e-3
-Initial contact angle : 180
+Liquid injection velocity : 0.02
+Droplet radius :            6e-3
+Initial contact angle :     180
 
 # Source
 Gravity : 0 0 0
 
 # Fluid properties
-Liquid dynamic viscosity : 0.9e-4
+Liquid dynamic viscosity : 9.0e-4
 Gas dynamic viscosity :    1.8e-5
 
 Liquid density : 997
 Gas density :    1.15
 
 Surface tension coefficient : 0.072
-Static contact angle :        60
+Static contact angle :        70
 
 # Time integration
 Max timestep size : 1e-4

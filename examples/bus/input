@@ -5,7 +5,7 @@ Partition : 4 1 1
 Grid resolution : 1
 
 # Source for tracer
-Source position : 6 1.1 1.55
+Source position : #6 1.1 1.55
 Source radius :   0.05
 
 # Fluid properties
@@ -14,7 +14,7 @@ Dynamic viscosity : 1.8e-5
 
 # Time integration
 Max timestep size :   1e-2
-Max cfl number :      1.2
+Max cfl number :      1.0
 Max simulation time : 200
 
 # Pressure solver
@@ -25,5 +25,6 @@ Pressure iteration : 100
 Implicit tolerance : 1e-6
 Implicit iteration : 100
 
-# Ensight ouput
-Ensight output period : 1
+# Various outputs
+Ensight output period : 10
+Restart output period : 60

@@ -2962,7 +2962,9 @@ contains
                
                ! Skip the cell if it's a true wall
                if (this%mask(ii,jj,kk).eq.1) cycle
-               
+
+               integrals=0.0_WP
+               b_dot_sum=0.0_WP
                ! Check all planes
                do nplane=1,getNumberOfPlanes(this%liquid_gas_interface(ii,jj,kk))
                   
@@ -2988,8 +2990,10 @@ contains
                   reconst_plane_coeffs=reconst_plane_coeffs/(-nloc(3))
                   
                   ! Get integrals
-                  integrals=0.0_WP
-                  b_dot_sum=0.0_WP
+                  ! integrals=0.0_WP
+                  ! b_dot_sum=0.0_WP  
+                  ! Get weighting
+                  ww=wgauss(sqrt(dot_product(ploc,ploc)),2.5_WP)
                   do n=1,shape
                      vert1=getPt(this%interface_polygon(nplane,ii,jj,kk),n-1)
                      vert2=getPt(this%interface_polygon(nplane,ii,jj,kk),modulo(n,shape))
@@ -2998,7 +3002,7 @@ contains
                      buf=(vert2-pref)/this%cfg%meshsize(i,j,k); vert2=[dot_product(buf,tref),dot_product(buf,sref),dot_product(buf,nref)]
                      ! Add to area integral
                      xv=vert1(1); xvn=vert2(1); yv=vert1(2); yvn=vert2(2)
-                     integrals = integrals + [&
+                     integrals = integrals + sqrt(ww)*[&
                      (xv*yvn - xvn*yv) / 2.0_WP, &
                      (xv + xvn)*(xv*yvn - xvn*yv) / 6.0_WP, &
                      (yv + yvn)*(xv*yvn - xvn*yv) / 6.0_WP, &
@@ -3006,20 +3010,18 @@ contains
                      (yvn - yv)*(3.0_WP*xv**2*yv + xv**2*yvn + 2.0_WP*xv*xvn*yv + 2.0_WP*xv*xvn*yvn + xvn**2*yv + 3.0_WP*xvn**2*yvn)/24.0_WP, &
                      (xv - xvn)*(yv + yvn)*(yv**2 + yvn**2) / 12.0_WP]
                   end do
-                  b_dot_sum=b_dot_sum+dot_product(reconst_plane_coeffs,integrals(1:3))
-                  
-                  ! Get weighting
-                  ww=wgauss(sqrt(dot_product(ploc,ploc)),2.5_WP)
-                  
-                  ! Add to symmetric matrix and RHS
-                  do aj=1,6
-                     do ai=1,aj
-                        A(ai,aj)=A(ai,aj)+ww*integrals(ai)*integrals(aj)
-                     end do
-                  end do
-                  b=b+ww*integrals*b_dot_sum
-                  
+
+                  b_dot_sum=b_dot_sum+sqrt(ww)*dot_product(reconst_plane_coeffs,integrals(1:3))
                end do
+                                 
+               ! Add to symmetric matrix and RHS
+               do aj=1,6
+                  do ai=1,aj
+                     A(ai,aj)=A(ai,aj)+integrals(ai)*integrals(aj)
+                  end do
+               end do
+               b=b+integrals*b_dot_sum
+
             end do
          end do
       end do
